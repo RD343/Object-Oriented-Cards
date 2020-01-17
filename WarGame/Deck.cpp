@@ -1,0 +1,427 @@
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <cstdlib>
+#include <time.h>
+
+#include "Card.h"
+#include "Card.cpp"
+#include "Deck.h"
+using namespace std;
+
+/******************************************
+//Base Constructor
+//Includes pointer reference initialization
+******************************************/
+Deck::Deck()
+{	
+	Card **cardPlace;
+	rankSum = 0;
+}
+
+/*********************************************************************
+//buildDynamic
+//creates the dynamic array of pointers with totalCards as an argument
+*********************************************************************/
+void Deck::buildDynamic()
+{
+	cardPlace = new Card*[52];
+	for(int i = 0; i < 52; i++)
+		cardPlace[i] = NULL;
+}
+
+/******************************************************************
+//fillDeck
+//takes totalCards as an argument
+//uses the size of the deck to create card objects for the pointers
+*******************************************************************/
+void Deck::fillDeck()
+{
+	int suitCount = 1;
+	int rankCount = 1;
+	for(int i = 0; i < 52; i++)
+	{
+		if(suitCount >= 1 && suitCount <=4)
+		{
+			Card card;
+			card.setSuit(suitCount);
+			card.setRank(rankCount);
+			cardPlace[i] = new Card(card);
+		}
+		else
+		{
+			suitCount = 1;
+			rankCount++;
+			Card card;
+			card.setSuit(suitCount);
+			card.setRank(rankCount);
+			cardPlace[i] = new Card(card);
+		}
+		suitCount++;
+	}
+}
+
+/********************************************************************************************
+//drawCard
+//takes totalCards as an argument
+//uses rand function to pull an initial random card object from the deck
+//if/else, do/while, and try functions go through deck to a pointer not null
+//once the counter == totalCards, then the deck is declared empty, breaking the do/while loop
+********************************************************************************************/
+Card Deck::drawCard()
+{
+	int l = rand() % 52;
+	int nullCount = 0;		//nullcount moderates the while loop.
+					//It ensures that the loop only runs the same number of
+					//times as there are pointers in the deck
+	Card temp;
+
+	try
+	{
+		if(cardPlace[l] == NULL)
+		{
+			do		//the do/while function goes through the pointer array,
+			{		//checking for NULL pointers
+					//the starting point is whatever pointer is returned by
+					//the random number function above
+				if(l < 52)
+				{
+					l = l++;
+					nullCount = nullCount++;
+				}
+				else
+				{
+					l = 0;
+					nullCount = nullCount++;
+				}
+			}while(cardPlace[l] == NULL && nullCount != 52);
+		}
+		if(nullCount == 52 && cardPlace[l] == NULL) throw temp;
+
+		temp = *cardPlace[l];
+		cardPlace[l] = NULL;
+		return temp;
+	}
+
+	catch(Card temp)
+	{
+		Card blank;
+		cout << "\nThe deck is empty~ ";
+		return blank;
+	}
+}
+
+/***********************************************************************
+//War function
+//This plays 10 rounds of War
+//Each round draws one card per player and compares them
+//Player with the higher card wins the round
+//Impossible for a draw in a round
+//Player who wins the most rounds wins the game
+//if both players win an equal number of rounds, the game ends in a draw
+//fully automated process
+************************************************************************/
+void Deck::gameOfWar()
+{
+	int player1 = 0;
+	int player2 = 0;
+	Card play1;
+	Card play2;
+
+	cout << "\nTwo players will now play a game of War" << endl;
+	cout << "The game will last for 10 rounds" << endl;
+	cin.ignore();
+
+	for(int i = 0; i < 10; i++)
+	{
+		play1 = drawCard();
+		play2 = drawCard();
+
+		cout << "\nPlayer 1 drew a card: " << play1 << endl;
+		cout << "\nPlayer 2 drew a card: " << play2 << endl;
+
+		if(play1 > play2)
+		{
+			player1++;
+			cout << "\nPlayer 1 wins this round!" << endl;
+		}
+		else
+		{
+			player2++;
+			cout << "\nPlayer 2 wins this round!" << endl;
+		}
+	cout << "---------------------------------------" << endl;
+	cin.ignore();
+
+	}
+
+	cout << "Player 1 score: " << player1 << endl;
+	cout << "Player 2 score: " << player2 << endl;
+
+	if(player1 > player2)
+		cout << "\nPlayer 1 is the winner!" << endl;
+	else if(player1 < player2)
+		cout << "\nPlayer 2 is the winner!" << endl;
+	else
+		cout << "\nThis game is a draw." << endl;
+}
+
+/**********************************************************************************
+//This function adds a card to (what is meant to be) a blank or partial deck object
+//The Deck object this is meant for should be a player's hand
+//This function also keeps a tally of the rank sum in the deck object
+**********************************************************************************/
+void Deck::addCard(Card draw)
+{
+	int n = 0;
+	do
+	{
+		if(cardPlace[n] == NULL)
+		{
+			cardPlace[n] = new Card(draw);
+			break;
+		}
+		else if(cardPlace[n] != NULL)
+		{
+			n++;
+		}
+	}while(cardPlace[10] == NULL);
+
+	rankSum = rankSum + draw;
+}
+
+/***********************************************************
+//getRankSum
+//Returns a deck's ranksum
+//Unless otherwise changed, rankSum should be zero
+//BlackJack function will change the rankSum of player decks
+***********************************************************/
+int Deck::getRankSum()
+{
+	return rankSum;
+}
+
+/**************************************
+//view hand function
+//prints all pointers that aren't NULL
+**************************************/
+void Deck::viewHand()
+{
+	int n = 0;
+	Card temp;
+	while(cardPlace[n] != NULL)
+	{
+		temp = *cardPlace[n];
+		cout << temp << endl;
+		n++;
+	}
+	//cout << "Hand Score: " << getRankSum() << endl;
+	//^In an actual game of poker, the players need to understand the scoring
+}
+
+/***************************************************
+//Blackjack function
+//Plays a game of blackjack
+//takes two Deck arguments: playerHand and houseHand
+****************************************************/
+void Deck::blackjack(Deck playerHand, Deck houseHand)
+{
+	char hitStay = ' ';
+	Card playerCard;
+	Card houseCard;
+
+	//Basic Rules
+	cout << "\nJack, Queen, and King cards all have a value of 10" << endl;
+	cout << "Ace has a value of 1" << endl;
+	cout << "Get as close to 21 without exceeding it as you can" << endl;
+	cout << "Hit to draw another card" << endl;
+	cout << "Stay to stop drawing cards" << endl;
+	cout << "This game will be played against the dealer" << endl;
+	cin.ignore();
+	cout << "\nEach player will now be dealt 2 cards" << endl;
+	cin.ignore();
+	for(int d = 0; d < 2; d++)	//Initial two card deal
+	{
+		playerCard = drawCard();
+		playerHand.addCard(playerCard);
+
+		houseCard = drawCard();
+		houseHand.addCard(houseCard);
+	}
+
+	cout << "\n*Your hand*" << endl;
+	playerHand.viewHand();
+	cout << "\n*Dealer's hand*" << endl;
+	houseHand.viewHand();
+	cin.ignore();
+
+	do
+	{
+		//Player's turn
+		cout << "\nYou may hit or stay (h for hit/s for stay): ";
+		cin >> hitStay;
+		cin.ignore();
+		while(hitStay != 'h' && hitStay != 's')
+		{
+			cout << "\nYou must enter either h or s: ";
+			cin >> hitStay;
+			cin.ignore();
+		}
+
+		switch(hitStay)
+		{
+		case 'h':
+			playerCard = drawCard();
+			playerHand.addCard(playerCard);;
+			cout << "\nYou drew: " << playerCard << endl;
+			cout << "\n*Your hand*" << endl;
+			playerHand.viewHand();
+			cin.ignore();
+			break;
+		case 's':
+			//do nothing
+			break;
+		default:
+			cout << "error" << endl;
+		}
+
+		//House's turn
+		if(hitStay == 'h' && playerHand.getRankSum() <= 21 && 
+		playerHand.getRankSum() > houseHand.getRankSum())
+		{
+			houseCard = drawCard();
+			cout << "\nDealer drew: " << houseCard << endl;
+			houseHand.addCard(houseCard);
+			cout << "\n*Dealer's hand*" << endl;
+			houseHand.viewHand();
+			cin.ignore();
+		}
+	}while(hitStay == 'h' && playerHand.getRankSum() < 21 && houseHand.getRankSum() < 21);
+
+	//House's turn if player stays
+	while(houseHand.getRankSum() < 21 && playerHand.getRankSum() <= 21 && 
+	playerHand.getRankSum() > houseHand.getRankSum())
+	{
+		if(playerHand.getRankSum() > houseHand.getRankSum())
+		{
+			houseCard = drawCard();
+			cout << "\nDealer drew: " << houseCard << endl;
+			houseHand.addCard(houseCard);
+			cout << "\n*Dealer's hand*" << endl;
+			houseHand.viewHand();
+			cin.ignore();
+		}
+	}
+
+	//win/lose conditions	(multiple if/else statements for code readability) 
+	if(playerHand.getRankSum() == 21)
+	{
+		cout << "\nYou won!" << endl;
+		cout << "********" << endl;
+	}
+	else if(playerHand.getRankSum() < 21 && houseHand.getRankSum() > 21)
+	{
+		cout << "\nYou won!" << endl;
+		cout << "********" << endl;
+	}
+	else if(playerHand.getRankSum() < 21 && playerHand.getRankSum() > houseHand.getRankSum())
+	{
+		cout << "\nYou won!" << endl;
+		cout << "********" << endl;
+	}
+	else
+	{
+		cout << "\nThe House wins" << endl;
+		cout << "--------------" << endl;
+	}
+}
+
+/*****************************
+//Deconstructor
+//resets all pointers to NULL
+*****************************/
+Deck::~Deck()
+{
+	cardPlace = new Card*[52];
+	for(int i = 0; i < 52; i++)
+	cardPlace[i] = NULL;
+}
+
+/******************************************
+//menu function
+//not a member of Deck class
+//called by main to select functions to run
+*******************************************/
+void menu(Deck myDeck)
+{
+	Deck playerHand;	//Calls Deck constructor, makes object playerHand	
+	playerHand.buildDynamic();	//Constructs array of NULL pointers
+	Deck houseHand;		//Calls Deck constructor, makes object houseHand	
+	houseHand.buildDynamic();	//Constructs array of NULL pointers
+	int pick = 0;
+	Card temp;
+
+	cout << "\nIf the program ever pauses, press Enter to continue";
+	cin.ignore();
+
+	do
+	{
+		int repeat = 2;
+		cout << endl;
+		cout << "***************************************************" << endl;
+		cout << "1) Draw cards" << endl;
+		cout <<	"2) Play a game of War" << endl;
+		cout << "3) Play a game of Blackjack against the House" << endl;
+		cout << "4) End program" << endl;
+		cout << "***************************************************" << endl;
+
+		cout << "Select an action by entering the appropriate number: ";
+		cin >> pick;
+
+		system("clear");
+
+		switch(pick)
+		{
+		case 1:
+			myDeck.fillDeck();
+			do
+			{
+				temp = myDeck.drawCard();
+				cout << "\n" << temp << endl;
+
+				cout << "\nTo draw another card, press any number above 0" << endl;
+				cout << "To return to menu, press 0: ";
+				cin >> repeat;
+				cout << endl;
+			}while(repeat != 0);
+			myDeck.~Deck();
+			system("clear");
+			break;
+		case 2:
+			myDeck.fillDeck();
+			myDeck.gameOfWar();
+			myDeck.~Deck();
+			cout << "\nPress Enter to return to the main menu" << endl;
+			cin.ignore();
+			system("clear");
+			break;
+		case 3:
+			myDeck.fillDeck();
+			myDeck.blackjack(playerHand, houseHand);
+			myDeck.~Deck();
+			playerHand.~Deck();
+			houseHand.~Deck();
+			cout << "\nPress Enter to return to the main menu" << endl;
+			cin.ignore();
+			system("clear");
+			break;
+		case 4:
+			system("clear");
+			cout << "\nGoodbye!" << endl;
+			cout << "********" << endl;
+			break;
+		default:
+			cout << "You did not enter 1-4: Try again" << endl;
+		}
+	}while(pick != 4);	
+}
